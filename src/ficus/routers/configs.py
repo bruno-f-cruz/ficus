@@ -5,7 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from ficus.database.data_store import DataStore
-from ficus.schemas.configs import AcrossConfigResponse, ConfigDataResponse, ConfigResponse
+from ficus.schemas.configs import (
+    AcrossConfigResponse,
+    ConfigDataResponse,
+    ConfigResponse,
+    DryRunResponse,
+)
 from ficus.services.configs import (
     DEFAULT_MODE,
     VALID_EXTENSIONS_TYPE,
@@ -90,10 +95,10 @@ def save_config_endpoint(
     dry_run: bool = False,
     scope_identifiers: dict[str, str] = Depends(_parse_scopes),
     data_store: DataStore = Depends(data_store),
-) -> ConfigResponse | dict:
+) -> ConfigResponse | DryRunResponse:
     try:
         if dry_run:
-            return {"changes": dry_run_save_config(
+            return DryRunResponse(changes=dry_run_save_config(
                 data_store,
                 namespace=namespace,
                 mode=mode,
@@ -103,7 +108,7 @@ def save_config_endpoint(
                 overwrite_defaults=overwrite_defaults,
                 append_new_fields_to_last_scope=append_new_fields_to_last_scope,
                 create_missing_namespace=create_missing_namespace,
-            )}
+            ))
         save_config(
             data_store,
             namespace,
@@ -133,13 +138,13 @@ def update_config_endpoint(
     dry_run: bool = False,
     scope_identifiers: dict[str, str] = Depends(_parse_scopes),
     data_store: DataStore = Depends(data_store),
-) -> ConfigResponse | dict:
+) -> ConfigResponse | DryRunResponse:
     try:
         if dry_run:
             current = get_config(
                 data_store, namespace, mode=mode, scope_identifiers=scope_identifiers
             )
-            return {"changes": dry_run_save_config(
+            return DryRunResponse(changes=dry_run_save_config(
                 data_store,
                 namespace=namespace,
                 mode=mode,
@@ -148,7 +153,7 @@ def update_config_endpoint(
                 suffix=suffix,
                 overwrite_defaults=overwrite_defaults,
                 append_new_fields_to_last_scope=append_new_fields_to_last_scope,
-            )}
+            ))
         update_config(
             data_store,
             namespace,
